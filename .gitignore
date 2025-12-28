@@ -1,0 +1,9 @@
+node_modules
+.env
+dist
+.DS_Store
+*.log
+server/test-gemini.js
+server/diagnose-gemini.js
+server/list-models-rest.js
+test-gemini.js
