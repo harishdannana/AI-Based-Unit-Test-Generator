@@ -19,33 +19,63 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ai-test-g
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// MongoDB Schema for History
-const historySchema = new mongoose.Schema({
-    code: String,
-    tests: String,
-    results: Array,
-    type: { type: String, enum: ['generate', 'run'] },
-    timestamp: { type: Date, default: Date.now }
-});
-const History = mongoose.model('History', historySchema);
+// Models
+const History = require('./models/History');
+const authRoutes = require('./routes/authRoutes');
+const { protect } = require('./middleware/authMiddleware');
 
 // Google Gemini Configuration
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+console.log('API Key Loaded:', apiKey ? 'Yes (starts with ' + apiKey.substring(0, 4) + '... length: ' + apiKey.length + ')' : 'No');
+const genAI = new GoogleGenerativeAI(apiKey);
 
 // API Routes
+app.use('/api/auth', authRoutes);
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'AI Unit Test Generator API' });
 });
 
+// Fetch User History
+app.get('/api/history', protect, async (req, res) => {
+    try {
+        const history = await History.find({ user: req.user._id }).sort({ timestamp: -1 });
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch history" });
+    }
+});
+
+// Delete User History Item
+app.delete('/api/history/:id', protect, async (req, res) => {
+    try {
+        const item = await History.findById(req.params.id);
+
+        if (!item) {
+            return res.status(404).json({ error: "History item not found" });
+        }
+
+        if (item.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ error: "Not authorized" });
+        }
+
+        await item.deleteOne();
+        res.json({ message: "History item removed" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to delete item" });
+    }
+});
+
 // Generate Tests with Gemini
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', protect, async (req, res) => {
     const { code } = req.body || {};
     if (!code) {
         return res.status(400).json({ error: "Code is required" });
     }
 
+
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash"});
 
         const prompt = `
         You are an expert Javascript/Jest unit tester.
@@ -66,7 +96,12 @@ app.post('/api/generate', async (req, res) => {
         testCode = testCode.replace(/```javascript/g, '').replace(/```js/g, '').replace(/```/g, '');
 
         // Save to History
-        await History.create({ code, tests: testCode, type: 'generate' });
+        await History.create({ 
+            user: req.user._id,
+            code, 
+            tests: testCode, 
+            type: 'generate' 
+        });
 
         res.json({ testCode });
     } 
@@ -81,8 +116,9 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
+
 // Run Tests with isolated-vm
-app.post('/api/run', async (req, res) => {
+app.post('/api/run', protect, async (req, res) => {
     const { code, tests } = req.body || {};
      if (!code || !tests) {
         return res.status(400).json({ error: "Code and Tests are required" });
@@ -161,7 +197,13 @@ app.post('/api/run', async (req, res) => {
         const results = resultsRef.copySync(); 
 
         // Save to History
-        await History.create({ code, tests, results, type: 'run' });
+        await History.create({ 
+            user: req.user._id,
+            code, 
+            tests, 
+            results, 
+            type: 'run' 
+        });
 
         res.json({ results });
 
