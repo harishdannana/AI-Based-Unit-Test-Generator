@@ -5,6 +5,8 @@ const cors = require('cors');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 
+const path = require('path');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -20,9 +22,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ai-test-g
 // Google Gemini Configuration
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Routes
-app.get('/', (req, res) => {
-    res.send('AI Unit Test Generator API');
+// API Routes
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'AI Unit Test Generator API' });
 });
 
 // Generate Tests with Gemini
@@ -100,7 +102,7 @@ app.post('/api/run', async (req, res) => {
                     if (actual !== expected) throw new Error("Expected " + expected + " but got " + actual);
                 },
                 toEqual: (expected) => {
-                     if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error("Expected " + JSON.stringify(expected) + " but got " + JSON.stringify(actual));
+                    if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error("Expected " + JSON.stringify(expected) + " but got " + JSON.stringify(actual));
                 },
                 toBeTruthy: () => {
                     if (!actual) throw new Error("Expected " + actual + " to be truthy");
@@ -127,6 +129,15 @@ app.post('/api/run', async (req, res) => {
         res.status(500).json({ error: "Sandbox Execution Failed: " + error.message });
     }
 });
+
+// Deployment: Serve Static Files in Production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../client/dist')));
+
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(__dirname, '../client', 'dist', 'index.html'));
+    });
+}
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
