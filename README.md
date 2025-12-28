@@ -1,88 +1,72 @@
-# AI Unit Test Generator (MERN Stack)
+# AI Unit Test Generator
 
-A powerful MERN stack application that leverages Google Gemini AI to generate unit tests for your JavaScript code and executes them securely in a server-side sandbox.
+Hey there! This is a project I built to help developers (and myself) generate unit tests quickly using AI. It uses Google Gemini to analyze JavaScript code and create Jest tests automatically. I also built a secure sandbox so you can run the generated tests right in the browser without worrying about safety.
+
+I built this using the MERN stack (MongoDB, Express, React, Node.js).
 
 **Live Demo**: [https://github.com/harishdannana/AI-Based-Unit-Test-Generator](https://github.com/harishdannana/AI-Based-Unit-Test-Generator)
 
-![Screenshot](screenshot.png)
+![App Screenshot](screenshot.png)
 
-## 🚀 Features
+## What it does
 
--   **Monaco Editor**: Premium, VS Code-like coding experience with syntax highlighting.
--   **AI-Powered Generation**: Uses **Google Gemini 1.5** to intelligently generate Jest unit tests.
--   **Secure Sandbox execution**: Runs tests safely on the backend using `isolated-vm`.
--   **User Authentication**: Secure Sign Up and Login with JWT and Bcrypt.
--   **History Tracking**: Saves every generation and test run to your personal history.
--   **Resizable Layout**: customizable IDE-like interface (Drag to resize Sidebar, Editors, Console).
--   **Premium Dark UI**: Modern, glassmorphism-inspired design.
+-   **Code Editor**: I used Monaco Editor (the same one VS Code uses) so it feels familiar including syntax highlighting.
+-   **AI Generation**: You paste a function, click a button, and it hits the Google Gemini API to write the tests for you.
+-   **Run Tests Safely**: The backend runs the tests in a sandboxed environment (`isolated-vm`). This took some time to get right, but it ensures user code can't mess up the server.
+-   **Save Your Work**: You can create an account and log in. Every time you generate or run a test, I save it to your history so you can look back at it later.
+-   **Responsive Design**: I spent some time adding a resizable layout so you can adjust the sidebar and editor widths to your liking.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
--   **Frontend**: React (Vite), Monaco Editor, Axios, React Router.
--   **Backend**: Node.js, Express.js.
--   **Database**: MongoDB (Mongoose).
--   **AI**: Google Gemini API (`@google/generative-ai`).
--   **Security**: `isolated-vm` (Sandbox), `bcryptjs`, `jsonwebtoken`.
+-   **Frontend**: React, Vite
+-   **Backend**: Node.js, Express
+-   **Database**: MongoDB
+-   **AI**: Google Gemini 1.5
+-   **Tools**: Monaco Editor, isolated-vm, BCrypt (for auth)
 
-## 📦 Prerequisites
+## How to Run it Locally
 
--   Node.js (v18+ recommended)
--   MongoDB (Running locally or MongoDB Atlas URI)
--   Google Gemini API Key
+If you want to try this out on your own machine:
 
-## 🔧 Installation & Setup
-
-1.  **Clone the repository**
+1.  **Clone the repo**
     ```bash
     git clone https://github.com/harishdannana/AI-Based-Unit-Test-Generator.git
     cd AI-Based-Unit-Test-Generator
     ```
 
-2.  **Install Dependencies**
-    *Server:*
+2.  **Install the libraries**
+    You need to install packages for both the server and the client.
     ```bash
-    cd server
-    npm install
-    ```
-    *Client:*
-    ```bash
-    cd ../client
-    npm install
+    cd server && npm install
+    cd ../client && npm install
     ```
 
-3.  **Environment Variables**
-    Create a `.env` file in the `server` directory:
+3.  **Setup Environment Variables**
+    Go into the `server` folder and create a file named `.env`. You'll need a few keys:
     ```env
     PORT=5000
-    MONGODB_URI=mongodb://localhost:27017/ai-test-generator  # Or your Atlas URI
-    GEMINI_API_KEY=your_google_gemini_api_key
-    JWT_SECRET=your_super_secret_key
+    MONGODB_URI=mongodb://localhost:27017/ai-test-generator
+    GEMINI_API_KEY=your_google_gemini_key_here
+    JWT_SECRET=some_random_secret_string
     ```
 
-## 🏃‍♂️ Running the Application
-
-1.  **Start the Backend** (Terminal 1)
+4.  **Start it up**
+    Open two terminal windows.
+    
+    In the first one (server):
     ```bash
     cd server
     node index.js
     ```
-    *Server runs on port 5000.*
-
-2.  **Start the Frontend** (Terminal 2)
+    
+    In the second one (client):
     ```bash
     cd client
     npm run dev
     ```
-    *Client runs on http://localhost:5173.*
 
-## 📖 Usage Guide
+5.  Open your browser to `http://localhost:5173`.
 
-1.  **Register/Login**: Create an account to save your work.
-2.  **Write Code**: Paste your JavaScript function in the **Source Code** editor (left).
-3.  **Generate Tests**: Click the **Generate Tests** button. The AI will populate the **Unit Tests** editor (right).
-4.  **Run Tests**: Click **Run Tests**. The backend will execute the tests in a sandbox and display the results in the **Console** (bottom).
-5.  **History**: Access your previous code and tests from the **History Sidebar**. Click the trash icon to delete items.
+## Contributing
 
-## 🤝 Contributing
-
-Contributions are welcome! Please fork the repository and submit a pull request.
+Feel free to fork this and suggest improvements! I'm always looking to make the prompt engineering better or improve the UI.
