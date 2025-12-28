@@ -19,6 +19,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ai-test-g
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.error('MongoDB connection error:', err));
 
+// MongoDB Schema for History
+const historySchema = new mongoose.Schema({
+    code: String,
+    tests: String,
+    results: Array,
+    type: { type: String, enum: ['generate', 'run'] },
+    timestamp: { type: Date, default: Date.now }
+});
+const History = mongoose.model('History', historySchema);
+
 // Google Gemini Configuration
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -54,6 +64,9 @@ app.post('/api/generate', async (req, res) => {
         
         // Clean up markdown code blocks if present (Gemini loves markdown)
         testCode = testCode.replace(/```javascript/g, '').replace(/```js/g, '').replace(/```/g, '');
+
+        // Save to History
+        await History.create({ code, tests: testCode, type: 'generate' });
 
         res.json({ testCode });
     } 
@@ -109,6 +122,31 @@ app.post('/api/run', async (req, res) => {
                 },
                 toBeFalsy: () => {
                     if (actual) throw new Error("Expected " + actual + " to be falsy");
+                },
+                toBeNaN: () => {
+                    if (!Number.isNaN(actual)) throw new Error("Expected " + actual + " to be NaN");
+                },
+                toBeNull: () => {
+                    if (actual !== null) throw new Error("Expected " + actual + " to be null");
+                },
+                toBeUndefined: () => {
+                    if (typeof actual !== 'undefined') throw new Error("Expected " + actual + " to be undefined");
+                },
+                toBeDefined: () => {
+                    if (typeof actual === 'undefined') throw new Error("Expected value to be defined");
+                },
+                toBeCloseTo: (expected, numDigits = 2) => {
+                    if (typeof actual !== 'number') throw new Error("Actual value is not a number");
+                    const precision = Math.pow(10, -numDigits) / 2;
+                    if (Math.abs(actual - expected) > precision) {
+                        throw new Error("Expected " + actual + " to be close to " + expected);
+                    }
+                },
+                toBeGreaterThan: (expected) => {
+                    if (actual <= expected) throw new Error("Expected " + actual + " to be greater than " + expected);
+                },
+                toBeLessThan: (expected) => {
+                    if (actual >= expected) throw new Error("Expected " + actual + " to be less than " + expected);
                 }
             });
         `;
@@ -121,6 +159,9 @@ app.post('/api/run', async (req, res) => {
         // Extract Results
         const resultsRef = jail.getSync('results');
         const results = resultsRef.copySync(); 
+
+        // Save to History
+        await History.create({ code, tests, results, type: 'run' });
 
         res.json({ results });
 
